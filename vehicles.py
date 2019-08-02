@@ -1,9 +1,6 @@
 import tkinter as tk
 from turtle import RawTurtle, TurtleScreen
-import random
-import math
-import sys
-import time
+import random, math, sys, time
 
 
 ###################################################################################################################
@@ -20,15 +17,11 @@ class HeatSource:
         self.heat_source.color("orange")
         self.heat_source.showturtle()
         self.heat_source.goto(random.randint(-290, 290), random.randint(-290, 290))
-        self.onclick_event(self.heat_source)
+        self.heat_source.ondrag(self.drag_heat_source)
 
-    ###############################################################################################################
-    def onclick_event(self, source):
-        def onclick_hit(x, y):
-            source.goto(x, y)
-            return
-        self.turtle_window.wn.onclick(onclick_hit)
-
+    def drag_heat_source(self, x, y):
+        self.heat_source.goto(x, y)
+        self.turtle_window.wn.update()
 
 ###################################################################################################################
 ###################################################################################################################
@@ -53,7 +46,6 @@ class Vehicle:
         self.vehicle.goto(random.randint(-290, 290), random.randint(-290, 290))
         self.vehicle.right(random.randint(0, 360))
         self.vehicle.showturtle()
-        self.onclick_event(self.vehicle)
 
     ###############################################################################################################
     def move(self):
@@ -123,12 +115,6 @@ class Vehicle:
             right_speed = (self.speed_parameters[0] / (right_distance ** self.speed_parameters[1])) - self.speed_parameters[2]
         combined_speed = (left_speed + right_speed) / 2
         return left_speed, right_speed, combined_speed
-
-    ###############################################################################################################
-    def onclick_event(self, source):
-        def onclick_hit(x, y):
-            source.goto(x, y)
-        self.turtle_window.wn.onclick(onclick_hit)
 
 
 ###################################################################################################################
@@ -203,7 +189,9 @@ class TurtleWindow:
 
     ###############################################################################################################
     def reset(self):
-        self.vehicle_list.pop(0)
+        self.vehicle_list = []
+        self.heat_source_list = []
+
         self.wn.clear()
         self.wn.tracer(0, 0)
         self.create_heat_sources()
@@ -213,13 +201,6 @@ class TurtleWindow:
     ###############################################################################################################
     def quit(self):
         sys.exit()
-
-    ###############################################################################################################
-    def onclick_event(self, source):
-        def onclick_hit(x, y):
-            source.goto(x, y)
-        self.wn.onclick(onclick_hit)
-        self.wn.update()
 
 
 ###################################################################################################################
