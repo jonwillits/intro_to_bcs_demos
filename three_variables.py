@@ -1,115 +1,152 @@
 import tkinter as tk
-from turtle import RawTurtle, TurtleScreen
-import numpy as np
-import math
+from tkinter import messagebox
+import sys, math
 
 
-def create_canvas():
-    root = tk.Tk()
-    canvas = tk.Canvas(root, width=700, height=700)
-    canvas.pack()
+class Agent:
 
-    wn = TurtleScreen(canvas)
+    def __init__(self):
+        self.variable_list = [0, 8, 0]
+        self.variable_label_list = ['Happiness', 'Sleep (hrs.)', 'Exercise (min.)']
+        self.variable_minmax_list = [(-1, 1), (0, 16), (0, 480)]
+        self.history_matrix = []
 
-    button_frame = tk.Frame(root)
-    button_frame.pack()
+    def next(self):
+        self.history_matrix.append(self.variable_list.copy())
 
-    return wn, button_frame
-
-
-def draw_axes(wn):
-    # draw the axes
-    x = RawTurtle(wn)
-    x.hideturtle()
-    y = RawTurtle(wn)
-    y.hideturtle()
-    z = RawTurtle(wn)
-    z.hideturtle()
-
-    z_axis = np.linspace(0, 300, 2)
-    x_axis = np.sin(z_axis)
-    y_axis = np.cos(z_axis)
-
-    for i in range(len(z_axis)):
-        print(z_axis[i], x_axis[i], y_axis[i])
-
-    x2d = x_axis - z_axis * math.cos(math.radians(45))
-    y2d = y_axis - z_axis * math.sin(math.radians(45))
-    print()
-    for i in range(len(z_axis)):
-        print(z_axis[i], x2d[i], y2d[i])
-
-    for i in range(len(x_axis)):
-        x.goto(z_axis[i], 0)
-        print(x.position())
-        y.goto(0, z_axis[i])
-        print(y.position())
-    x.write("x", font = ("Arial", 30, "normal"))
-    y.write("y", font = ("Arial", 30, "normal"))
-    for i in range(len(x2d)):
-        z.goto(x2d[i], y2d[i])
+        self.variable_list[0] = math.tanh(math.atanh(-1 * self.variable_list[0]))
+        self.variable_list[1] = 16 / (1 + 2.71828**(-1 * self.variable_list[1]-8))
+        self.variable_list[2] = 500 / (1 + 2.71828**(-1 * self.variable_list[2]-300))
 
 
-    z.penup()
-    z.goto(-210, -200)
-    z.pendown()
-    z.write("z", font = ("Arial", 30, "normal"))
+class Display:
 
+    def __init__(self):
+        self.root = tk.Tk()
 
-def convert_projection(wn):
-    zline = np.linspace(0, 15, 1000)
-    xline = np.sin(zline)
-    yline = np.cos(zline)
+        self.root.title("Three Variable Simulation")
+        self.running = False
+        self.day = 0
 
-    global x2D
-    x2D = xline - zline * math.cos(math.radians(45))
-    global y2D
-    y2D = yline - zline * math.sin(math.radians(45))
+        self.agent = Agent()
 
-    global c
-    c = RawTurtle(wn)
-    c.hideturtle()
-    c.penup()
-    c.goto(x2D[0] * 20, y2D[0] * 20)
-    c.pendown()
+        self.create_single_var_windows()
+        self.create_all_var_window()
+        self.create_data_window()
+        self.create_buttons()
 
+    def create_single_var_windows(self):
+        self.single_var_frame = tk.Frame(self.root, width=350, height=700, padx=0, pady=0)
+        self.single_var_frame.grid(row=0, column=0, ipadx=0, ipady=0, padx=0, pady=0)
+        self.single_variable_canvas_list = []
 
-def draw_curve():
-    # draw the curve
-    global running
-    running = True
+        for i in range(3):
+            new_canvas = tk.Canvas(self.single_var_frame, width=350, height=232, bg='white')
+            new_canvas.pack()
+            self.single_variable_canvas_list.append(new_canvas)
+            new_canvas.create_line(20, 210, 340, 210, fill='black', width=2)
+            new_canvas.create_line(20, 210, 20, 20, fill='black', width=2)
+            new_canvas.create_text(5, 150, anchor="nw", angle=90, text=self.agent.variable_label_list[i])
+            new_canvas.create_text(175, 220, text="Day")
 
-    if c.xcor() == x2D[0] * 20 and c.ycor() == y2D[0] * 20:
-        for i in range(len(x2D)):
-            c.goto(x2D[i] * 20, y2D[i] * 20)
-            print(c.position())
-            if c.xcor() == x2D[len(x2D) - 1] and c.ycor() == y2D[len(y2D) - 1]:
-                break
-            if running == False:
-                break
-    else:
-        for i in range(len(x2D)):
-            if c.xcor() == x2D[i] * 20:
-                index = i
-                while index < len(x2D) - 1:
-                    if running == False:
-                        break
-                    c.goto(x2D[index + 1] * 20, y2D[index + 1] * 20)
-                    index += 1
+    def create_all_var_window(self):
+        self.all_vars_frame = tk.Frame(self.root, width=730, height=700, padx=0, pady=0)
+        self.all_vars_frame.grid(row=0, column=1)
+        self.all_vars_canvas = tk.Canvas(self.all_vars_frame, width=730, height=700, bg="white")
+        self.all_vars_canvas.pack()
 
+    def create_data_window(self):
+        self.data_frame = tk.Frame(self.root, width=300, height=700, padx=0, pady=0)
+        self.data_frame.grid(row=0, column=2)
+        self.data_canvas = tk.Canvas(self.data_frame, width=300, height=700, bg='white')
+        self.data_canvas.pack()
+        self.entry_list = []
 
-def stop_drawing():
-    global running
-    running = False
+        for i in range(3):
+            new_label = tk.Label(self.data_canvas, text=self.agent.variable_label_list[i], font=("Helvetica", 9), bg='white')
+            new_label.place(x=50+80*i, y=10)
+            v = tk.StringVar(self.data_canvas, value=str(self.agent.variable_list[i]))
+            new_entry = tk.Entry(self.data_canvas, width=5, textvariable=v)
+            new_entry.place(x=50+80*i, y=30)
+            self.entry_list.append(new_entry)
+
+    def create_buttons(self):
+        self.button_frame = tk.Frame(self.root, width=1280, height=20, padx=0, pady=0)
+        self.button_frame.grid(row=3, column=0, columnspan=3)
+        self.next_button = tk.Button(self.button_frame, text="Next", fg="black", command=self.next, width=10)
+        self.next_button.pack(side=tk.LEFT)
+        self.quit_button = tk.Button(self.button_frame, text="Quit", fg="black", command=self.quit_simulation, width=10)
+        self.quit_button.pack(side=tk.LEFT)
+
+    def process_entry_input(self):
+        all_ok = True
+
+        for i in range(3):
+            try:
+                value = float(self.entry_list[i].get())
+            except:
+                messagebox.showerror("Error", "{} Value must be a number".format(self.agent.variable_label_list[i]))
+                return False
+
+            if self.agent.variable_minmax_list[i][0] <= value <= self.agent.variable_minmax_list[i][1]:
+                self.agent.variable_list[i] = value
+            else:
+                all_ok = False
+                messagebox.showerror("Error", "{} Value must be between {}-{}".format(self.agent.variable_label_list[i],
+                                                                                      self.agent.variable_minmax_list[i][0],
+                                                                                      self.agent.variable_minmax_list[i][1]))
+
+        if all_ok:
+            for i in range(3):
+                self.entry_list[i].configure(state='disabled')
+
+        return all_ok
+
+    def next(self):
+
+        if self.day == 0:
+            all_ok = self.process_entry_input()
+        else:
+            all_ok = True
+
+        if all_ok:
+
+            print("Time: {}   {}: {:0.3f}  {}: {:0.3f}  {}: {:0.3f}".format(self.day,
+                                                                            self.agent.variable_label_list[0],
+                                                                            self.agent.variable_list[0],
+                                                                            self.agent.variable_label_list[1],
+                                                                            self.agent.variable_list[1],
+                                                                            self.agent.variable_label_list[2],
+                                                                            self.agent.variable_list[2]))
+            self.update_data_frame()
+            self.day += 1
+            self.agent.next()
+
+    def update_data_frame(self):
+        new_label = tk.Label(self.data_canvas, text="day: {}".format(self.day), font=("Helvetica", 8), bg='white')
+        new_label.place(x=5, y=60 + 20 * self.day)
+        for i in range(3):
+            value = "{:0.2f}".format(self.agent.variable_list[i])
+            new_label = tk.Label(self.data_canvas, text=value, font=("Helvetica", 8), bg='white')
+            new_label.place(x=50+80*i, y=60+20*self.day)
+
+    def update_single_var_plots(self):
+        for i in range(3):
+            self.single_variable_canvas_list[i].delete("all")
+            self.single_variable_canvas_list[i].create_line(20, 210, 340, 210, fill='black', width=2)
+            self.single_variable_canvas_list[i].create_line(20, 210, 20, 20, fill='black', width=2)
+            self.single_variable_canvas_list[i].create_text(5, 150, anchor="nw", angle=90, text=self.agent.variable_label_list[i])
+            self.single_variable_canvas_list[i].create_text(175, 220, text="Day")
+
+    @staticmethod
+    def quit_simulation():
+        sys.exit()
 
 
 def main():
-    wn, button_frame = create_canvas()
-    draw_axes(wn)
-    # convert_projection(wn)
-    # tk.Button(button_frame, text="run", fg="black", command=draw_curve).pack(side=tk.LEFT)
-    # tk.Button(button_frame, text="stop", fg="black", command=stop_drawing).pack(side=tk.RIGHT)
-    wn.mainloop()
+    the_display = Display()
+    the_display.root.mainloop()
+
 
 main()
 
