@@ -9,7 +9,8 @@ class Network:
         self.selected_activation_amount = 5.0
         self.spread_speed = 0.8
         self.learning_rate = 0.1
-        self.currently_selected_index = None
+        self.selection_weight = 1
+        self.selected_node_array = None
         self.load_data()
         self.initialize_network()
 
@@ -35,6 +36,10 @@ class Network:
         self.training_data = np.array(training_data, float)
         self.num_items = len(self.training_data)
         self.num_nodes = len(self.training_data[0])
+        self.selected_node_array = np.zeros([self.num_nodes], float)
+        self.label_index_dict = {}
+        for i in range(self.num_nodes):
+            self.label_index_dict[self.label_list[i]] = i
 
     def train(self):
         self.training_steps += 1
@@ -48,16 +53,14 @@ class Network:
 
     def next(self):
         self.time_steps += 1
-        self.activations = np.tanh(np.dot(self.activations, self.weight_matrix * self.spread_speed))
-        if self.currently_selected_index is not None:
-            self.activations[self.currently_selected_index] = 1
-        print(self.time_steps, self.activations)
+        self.activations = np.tanh(np.dot(self.activations + self.selected_node_array*self.selection_weight,
+                                          self.weight_matrix * self.spread_speed))
 
     def on_click(self, new_selected_index):
-        if self.currently_selected_index == new_selected_index:
-            self.currently_selected_index = None
+        if self.selected_node_array[new_selected_index] == 1:
+            self.selected_node_array[new_selected_index] = 0
         else:
-            self.currently_selected_index = new_selected_index
+            self.selected_node_array[new_selected_index] = 1
 
 
 class Display:
@@ -89,8 +92,6 @@ class Display:
         self.create_network_frame()
         self.create_activation_graph_frame()
         self.create_button_frame()
-
-        self.selected_node_index = None
 
     def create_weight_frame(self):
         self.weight_frame = tk.Frame(self.root, width=self.width*.45, height=self.height*.66, padx=0, pady=0)
@@ -125,7 +126,19 @@ class Display:
         self.network_frame.grid(row=0, column=1, rowspan=2)
         self.network_canvas = tk.Canvas(self.network_frame, width=self.width*.55, height=self.height, bg="white")
         self.network_canvas.pack()
+        self.network_canvas.bind("<Button-1>", self.network_click)
         self.update_network_activation_frame()
+
+    def network_click(self, event):
+        x, y = event.x, event.y
+        ids = self.network_canvas.find_overlapping(x, y, x, y)
+        try:
+            the_tag = self.network_canvas.itemcget(ids[0], "tags").split()[0]
+            the_index = self.network.label_index_dict[the_tag]
+            self.network.on_click(the_index)
+            self.update_network_activation_frame()
+        except:
+            pass
 
     def train(self):
         self.network.train()
@@ -171,11 +184,9 @@ class Display:
                     scaled_weight = -1
                 color = self.get_hex_color(scaled_weight)
 
-                try:
-                    self.weight_canvas.create_rectangle(x+j*(size+spacing), y+i*(size+spacing), x+j*(spacing+size)+size, y+i*(spacing+size)+size,
+                self.weight_canvas.create_rectangle(x+j*(size+spacing), y+i*(size+spacing), x+j*(spacing+size)+size, y+i*(spacing+size)+size,
                                                  outline="black", fill=color, width=1)
-                except:
-                    print(self.network.weight_matrix[i, j], color)
+
 
     def update_activation_graph_frame(self):
         self.graph_canvas.delete("all")
@@ -190,14 +201,25 @@ class Display:
             coords = self.node_coordinate_list[i]
             color = self.get_hex_color(self.network.activations[i])
 
-            self.network_canvas.create_oval(coords[0],
-                                            coords[1],
-                                            coords[0] + self.node_size,
-                                            coords[1] + self.node_size,
-                                            outline="black", fill=color, width=1, tags=i)
-            self.network_canvas.create_text(coords[0] + self.text_offset[0] + 2*len(self.network.label_list[i]),
-                                            coords[1] + self.text_offset[1],
-                                            text=self.network.label_list[i], font="Arial 10")
+            if self.network.selected_node_array[i] == 0:
+                self.network_canvas.create_oval(coords[0],
+                                                coords[1],
+                                                coords[0] + self.node_size,
+                                                coords[1] + self.node_size,
+                                                outline="black", fill=color, width=1, tags=self.network.label_list[i])
+                self.network_canvas.create_text(coords[0] + self.text_offset[0] + 2*len(self.network.label_list[i]),
+                                                coords[1] + self.text_offset[1],
+                                                text=self.network.label_list[i], font="Arial 10", fill='black')
+            else:
+                self.network_canvas.create_oval(coords[0],
+                                                coords[1],
+                                                coords[0] + self.node_size,
+                                                coords[1] + self.node_size,
+                                                outline="black", fill=color, width=3, tags=self.network.label_list[i])
+
+                self.network_canvas.create_text(coords[0] + self.text_offset[0] + 2*len(self.network.label_list[i]),
+                                                coords[1] + self.text_offset[1],
+                                                text=self.network.label_list[i], font="Arial 10 bold", fill='green')
 
     def reset(self):
         self.network.initialize_network()
