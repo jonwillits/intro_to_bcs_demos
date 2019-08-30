@@ -15,23 +15,29 @@ class HeatSource:
         self.heat_source.shape('circle')
         self.heat_source.penup()
         self.heat_source.color("orange")
+        self.place()
         self.heat_source.showturtle()
-        self.heat_source.goto(random.randint(-290, 290), random.randint(-290, 290))
+
         self.heat_source.ondrag(self.drag_heat_source)
+
+    def place(self):
+        max_location = self.turtle_window.screen_size / 2 - 10
+        self.heat_source.goto(random.randint(-max_location, max_location), random.randint(-max_location, max_location))
 
     def drag_heat_source(self, x, y):
         self.heat_source.goto(x, y)
         self.turtle_window.wn.update()
+
 
 ###################################################################################################################
 ###################################################################################################################
 class Vehicle:
     ###############################################################################################################
     def __init__(self, turtle_window, id_number):
-        self.speed_parameters = [20, 0.2, 6]
+        self.speed_params = [20, 0.2, 6]
         self.turn_parameters = [20]
         self.turtle_window = turtle_window
-
+        self.max_location = self.turtle_window.screen_size / 2 - 10
         self.vehicle = RawTurtle(self.turtle_window.wn)
         self.vehicle.hideturtle()
         self.id_number = id_number
@@ -43,9 +49,15 @@ class Vehicle:
             self.vehicle.color("red", (1, 0.85, 0.85))
         else:
             self.vehicle.color("blue", (0.85, 0.85, 1))
-        self.vehicle.goto(random.randint(-290, 290), random.randint(-290, 290))
-        self.vehicle.right(random.randint(0, 360))
+
+        self.place()
         self.vehicle.showturtle()
+
+    def place(self):
+
+        self.vehicle.goto(random.randint(-self.max_location, self.max_location),
+                          random.randint(-self.max_location, self.max_location))
+        self.vehicle.right(random.randint(0, 360))
 
     ###############################################################################################################
     def move(self):
@@ -62,12 +74,28 @@ class Vehicle:
             cumulative_speed += combined_speed
             cumulative_turn_amount += turn_amount
 
+        if isinstance(cumulative_turn_amount, complex):
+            cumulative_turn_amount = 0
+
+        if cumulative_speed < 0:
+            cumulative_speed = 0
+
         self.vehicle.right(cumulative_turn_amount)
         self.vehicle.forward(cumulative_speed)
         self.check_border_collision()
 
     def check_border_collision(self):
-        if self.vehicle.ycor() <= -330:
+        if self.vehicle.xcor() > self.max_location:
+            self.vehicle.goto(self.max_location, self.vehicle.ycor())
+        if self.vehicle.xcor() < -self.max_location:
+            self.vehicle.goto(-self.max_location, self.vehicle.ycor())
+
+        if self.vehicle.ycor() > self.max_location:
+            self.vehicle.goto(self.vehicle.xcor(), self.max_location)
+        if self.vehicle.ycor() < -self.max_location:
+            self.vehicle.goto(self.vehicle.xcor(), -self.max_location)
+
+        if self.vehicle.ycor() <= -self.max_location:
             if 0 <= self.vehicle.heading() <= 180:
                 turn_angle = 180 - self.vehicle.heading()
                 self.vehicle.setheading(turn_angle)
@@ -75,7 +103,7 @@ class Vehicle:
                 turn_angle = abs(360 - self.vehicle.heading())
                 self.vehicle.setheading(turn_angle)
 
-        if self.vehicle.ycor() >= 330:
+        if self.vehicle.ycor() >= self.max_location:
             if 0 <= self.vehicle.heading() <= 180:
                 turn_angle = 360 - self.vehicle.heading()
                 self.vehicle.setheading(turn_angle)
@@ -83,7 +111,7 @@ class Vehicle:
                 turn_angle = 360 - (self.vehicle.heading() - 180)
                 self.vehicle.setheading(turn_angle)
 
-        if self.vehicle.xcor() <= -330:
+        if self.vehicle.xcor() <= -self.max_location:
             if 0 <= self.vehicle.heading() <= 90:
                 turn_angle = 360 - self.vehicle.heading()
                 self.vehicle.setheading(turn_angle)
@@ -97,7 +125,7 @@ class Vehicle:
                 turn_angle = self.vehicle.heading() + 90
                 self.vehicle.setheading(turn_angle)
 
-        if self.vehicle.xcor() >= 330:
+        if self.vehicle.xcor() >= self.max_location:
             if 0 <= self.vehicle.heading() <= 180:
                 turn_angle = self.vehicle.heading() + 90
                 self.vehicle.setheading(turn_angle)
@@ -108,11 +136,11 @@ class Vehicle:
     ###############################################################################################################
     def compute_speed(self, left_distance, right_distance):
         if self.type == 'crossed':
-            left_speed = (self.speed_parameters[0] / (right_distance ** self.speed_parameters[1])) - self.speed_parameters[2]
-            right_speed = (self.speed_parameters[0] / (left_distance ** self.speed_parameters[1])) - self.speed_parameters[2]
+            left_speed = (self.speed_params[0] / (right_distance ** self.speed_params[1])) - self.speed_params[2]
+            right_speed = (self.speed_params[0] / (left_distance ** self.speed_params[1])) - self.speed_params[2]
         else:
-            left_speed = (self.speed_parameters[0] / (left_distance ** self.speed_parameters[1])) - self.speed_parameters[2]
-            right_speed = (self.speed_parameters[0] / (right_distance ** self.speed_parameters[1])) - self.speed_parameters[2]
+            left_speed = (self.speed_params[0] / (left_distance ** self.speed_params[1])) - self.speed_params[2]
+            right_speed = (self.speed_params[0] / (right_distance ** self.speed_params[1])) - self.speed_params[2]
         combined_speed = (left_speed + right_speed) / 2
         return left_speed, right_speed, combined_speed
 
@@ -121,7 +149,7 @@ class Vehicle:
 ###################################################################################################################
 class TurtleWindow:
     ###############################################################################################################
-    def __init__(self, num_vehicles, num_heat_sources):
+    def __init__(self, num_vehicles, num_heat_sources, screen_size):
         self.root = None
         self.canvas = None
         self.wn = None
@@ -130,6 +158,8 @@ class TurtleWindow:
         self.stop_button = None
         self.reset_button = None
         self.quit_button = None
+
+        self.screen_size = screen_size
 
         self.num_heat_sources = num_heat_sources
         self.heat_source_list = []
@@ -148,9 +178,12 @@ class TurtleWindow:
     ###############################################################################################################
     def create_window(self):
         self.root = tk.Tk()
-        self.canvas = tk.Canvas(self.root, width=700, height=700)
+        self.canvas = tk.Canvas(self.root, width=self.screen_size, height=self.screen_size)
         self.canvas.pack()
         self.wn = TurtleScreen(self.canvas)
+        self.root.title("Braitenberg's Vehicle #2")
+        self.wn.onkey(self.start_stop, "space")
+        self.wn.listen()
 
         self.button_frame = tk.Frame(self.root)
         self.button_frame.pack()
@@ -199,7 +232,8 @@ class TurtleWindow:
         self.wn.update()
 
     ###############################################################################################################
-    def quit(self):
+    @staticmethod
+    def quit():
         sys.exit()
 
 
@@ -207,12 +241,12 @@ class TurtleWindow:
 ###################################################################################################################
 ###################################################################################################################
 ###################################################################################################################
-NUM_TURTLES = 3
-NUM_HEAT_SOURCES = 3
-
 
 def main():
-    turtle_window = TurtleWindow(NUM_TURTLES, NUM_HEAT_SOURCES)
+    num_turtles = 3
+    num_heat_sources = 3
+    screen_size = 500
+    turtle_window = TurtleWindow(num_turtles, num_heat_sources, screen_size)
     turtle_window.wn.mainloop()
 
 

@@ -1,5 +1,5 @@
 import numpy as np
-import random, sys
+import sys
 import tkinter as tk
 import time
 
@@ -57,17 +57,26 @@ class World:
         self.the_matrix = self.new_matrix
         self.new_matrix = tempor_matrix
 
+
 class Window:
 
     def __init__(self, the_world, square_size):
+
+        self.the_world = the_world
+        self.square_size = square_size
+
         self.root = tk.Tk()
         self.root.title("Conway's Game of Life")
 
         self.display_frame = tk.Frame(self.root)
         self.display_frame.pack()
-        self.canvas = tk.Canvas(self.display_frame, width=800, height=800)
+        self.height = self.the_world.num_rows*square_size
+        self.width = self.the_world.num_columns*square_size
+        print(self.height, self.width)
+        self.canvas = tk.Canvas(self.display_frame, width=self.height, height=self.width)
         self.canvas.pack()
         self.canvas.bind("<Button-1>", self.onclick)
+        self.root.bind("<space>", self.start)
         self.canvas.pack()
 
         self.button_frame = tk.Frame(self.root)
@@ -82,10 +91,6 @@ class Window:
         self.reset_button.pack(side=tk.LEFT)
         self.quit_button.pack(side=tk.LEFT)
 
-        self.square_matrix = None
-
-        self.the_world = the_world
-        self.square_size = square_size
         self.running = False
 
         self.init_window()
@@ -133,13 +138,10 @@ class Window:
             self.the_world.onclick_init(i, j, original)
 
     def destroy_world(self):
-        self.square_matrix = None
         self.canvas.delete("all")
 
     def draw_world(self):
-        self.square_matrix = []
         for i in range(self.the_world.num_rows):
-            square_list = []
             for j in range(self.the_world.num_columns):
 
                 if i == 0 or i == self.the_world.num_rows - 1 or j == 0 or j == self.the_world.num_columns - 1:
@@ -150,9 +152,8 @@ class Window:
                     else:
                         color = "yellow"
                 square = self.canvas.create_rectangle(i * self.square_size, j * self.square_size, (i + 1) * self.square_size, (j + 1) * self.square_size, fill=color)
-                square_list.append(square)
                 j += 1
-            self.square_matrix.append(square_list)
+
             i += 1
 
     def quit(self):
@@ -160,9 +161,11 @@ class Window:
 
 
 def main():
-    matrix_size = (80, 80)
+    matrix_size = (80, 50)
     square_size = 10
     the_world = World(matrix_size)
     the_window = Window(the_world, square_size)
     the_window.root.mainloop()
+
+
 main()
