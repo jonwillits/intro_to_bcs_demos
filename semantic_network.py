@@ -8,9 +8,8 @@ class Network:
     def __init__(self):
         self.selected_activation_amount = 5.0
         self.spread_speed = 0.8
-        self.learning_rate = 0.01
+        self.learning_rate = 0.1
         self.currently_selected_index = None
-
         self.load_data()
         self.initialize_network()
 
@@ -18,6 +17,7 @@ class Network:
         self.activations = np.random.uniform(-.5, .5, [self.num_nodes])
         self.weight_matrix = np.random.uniform(-.01, .01, [self.num_nodes, self.num_nodes])
         self.training_steps = 0
+        self.time_steps = 0
 
     def load_data(self):
         f = open('semantic_network_items.txt')
@@ -37,20 +37,21 @@ class Network:
         self.num_nodes = len(self.training_data[0])
 
     def train(self):
+        self.training_steps += 1
         for i in range(self.num_items):
             item = self.training_data[i]
             for j in range(self.num_nodes):
                 for k in range(self.num_nodes):
                     self.weight_matrix[j, k] += self.learning_rate * item[j] * item[k]
         for i in range(self.num_nodes):
-            print(self.label_list[i], self.weight_matrix[i,:])
+            print(self.training_steps, self.label_list[i], self.weight_matrix[i,:])
 
     def next(self):
+        self.time_steps += 1
         self.activations = np.tanh(np.dot(self.activations, self.weight_matrix * self.spread_speed))
-
         if self.currently_selected_index is not None:
             self.activations[self.currently_selected_index] = 1
-        print(self.activations)
+        print(self.time_steps, self.activations)
 
     def on_click(self, new_selected_index):
         if self.currently_selected_index == new_selected_index:
@@ -66,8 +67,6 @@ class Display:
         self.width = window_size[1]
 
         self.root = tk.Tk()
-        self.time_steps = 0
-        self.training_steps = 0
 
         self.root.title("Semantic Network")
         self.running = False
@@ -84,6 +83,7 @@ class Display:
                                      ]
         self.node_size = 20
         self.text_offset = [40, 10]
+        self.weight_size = 6
 
         self.create_weight_frame()
         self.create_network_frame()
@@ -93,16 +93,16 @@ class Display:
         self.selected_node_index = None
 
     def create_weight_frame(self):
-        self.weight_frame = tk.Frame(self.root, width=self.width*.3, height=self.height*.5, padx=0, pady=0)
+        self.weight_frame = tk.Frame(self.root, width=self.width*.45, height=self.height*.66, padx=0, pady=0)
         self.weight_frame.grid(row=0, column=0, ipadx=0, ipady=0, padx=0, pady=0)
-        self.weight_canvas = tk.Canvas(self.weight_frame, width=self.width*.3, height=self.height*.5, bg='white')
+        self.weight_canvas = tk.Canvas(self.weight_frame, width=self.width*.45, height=self.height*.66, bg='white')
         self.weight_canvas.pack()
         self.update_weight_frame()
 
     def create_activation_graph_frame(self):
-        self.graph_frame = tk.Frame(self.root, width=self.width*.3, height=self.height*.5, padx=0, pady=0)
+        self.graph_frame = tk.Frame(self.root, width=self.width*.45, height=self.height*.35, padx=0, pady=0)
         self.graph_frame.grid(row=1, column=0, ipadx=0, ipady=0, padx=0, pady=0)
-        self.graph_canvas = tk.Canvas(self.graph_frame, width=self.width*.3, height=self.height*.5, bg="white")
+        self.graph_canvas = tk.Canvas(self.graph_frame, width=self.width*.45, height=self.height*.35, bg="white")
         self.graph_canvas.pack()
         self.update_activation_graph_frame()
 
@@ -121,16 +121,14 @@ class Display:
         self.quit_button.pack(side=tk.LEFT)
 
     def create_network_frame(self):
-        self.network_frame = tk.Frame(self.root, width=self.width*.7, height=self.height*.9, padx=0, pady=0)
+        self.network_frame = tk.Frame(self.root, width=self.width*.55, height=self.height*.9, padx=0, pady=0)
         self.network_frame.grid(row=0, column=1, rowspan=2)
-        self.network_canvas = tk.Canvas(self.network_frame, width=self.width*.7, height=self.height, bg="white")
+        self.network_canvas = tk.Canvas(self.network_frame, width=self.width*.55, height=self.height, bg="white")
         self.network_canvas.pack()
-
         self.update_network_activation_frame()
 
     def train(self):
         self.network.train()
-        self.training_steps += 1
         self.update_weight_frame()
 
     def start(self):
@@ -150,11 +148,34 @@ class Display:
         self.network.next()
         self.update_network_activation_frame()
         self.update_activation_graph_frame()
-        self.time_steps += 1
 
     def update_weight_frame(self):
         self.weight_canvas.delete("all")
-        self.weight_canvas.create_text(70, 10, text="Network Weights", font="Arial 12 bold")
+        self.weight_canvas.create_text(85, 10,
+                                       text="Network Weights (t={})".format(self.network.training_steps),
+                                       font="Arial 12 bold")
+
+        x = 60
+        y = 20
+        size = 6
+        spacing = 3
+
+        for i in range(self.network.num_nodes):
+            self.weight_canvas.create_text(30, 23+i*9, font='Arial 7', text=self.network.label_list[i])
+            for j in range(self.network.num_nodes):
+
+                scaled_weight = self.network.weight_matrix[i, j] / 10
+                if scaled_weight > 1:
+                    scaled_weight = 1
+                if scaled_weight < -1:
+                    scaled_weight = -1
+                color = self.get_hex_color(scaled_weight)
+
+                try:
+                    self.weight_canvas.create_rectangle(x+j*(size+spacing), y+i*(size+spacing), x+j*(spacing+size)+size, y+i*(spacing+size)+size,
+                                                 outline="black", fill=color, width=1)
+                except:
+                    print(self.network.weight_matrix[i, j], color)
 
     def update_activation_graph_frame(self):
         self.graph_canvas.delete("all")
@@ -162,7 +183,9 @@ class Display:
 
     def update_network_activation_frame(self):
         self.network_canvas.delete("all")
-        self.network_canvas.create_text(80, 10, text="Network Activation", font="Arial 12 bold")
+        self.network_canvas.create_text(95, 10,
+                                        text="Network Activation (t={})".format(self.network.time_steps),
+                                        font="Arial 12 bold")
         for i in range(self.network.num_nodes):
             coords = self.node_coordinate_list[i]
             color = self.get_hex_color(self.network.activations[i])
@@ -177,7 +200,10 @@ class Display:
                                             text=self.network.label_list[i], font="Arial 10")
 
     def reset(self):
-        pass
+        self.network.initialize_network()
+        self.update_weight_frame()
+        self.update_activation_graph_frame()
+        self.update_network_activation_frame()
 
     @staticmethod
     def quit_simulation():
@@ -202,9 +228,9 @@ class Display:
 
 def main():
 
-    window_size = (500, 900)
+    window_size = (600, 1200)
     the_network = Network()
-    np.set_printoptions(suppress=True, precision=4)
+    np.set_printoptions(suppress=True, precision=3)
     the_display = Display(window_size, the_network)
     the_display.root.mainloop()
 
