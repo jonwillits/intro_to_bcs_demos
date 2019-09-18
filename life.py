@@ -161,7 +161,7 @@ class Window:
 
 
 def main():
-    matrix_size = (80, 50)
+    matrix_size = (80, 80)
     square_size = 10
     the_world = World(matrix_size)
     the_window = Window(the_world, square_size)
