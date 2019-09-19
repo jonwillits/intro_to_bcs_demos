@@ -174,7 +174,7 @@ class Display:
     def draw_items(self):
         header = "x1     x2        y"
         self.network_canvas.create_text(703, 50, text=header, font="Arial 16 bold", fill="black")
-        self.network_canvas.create_line(650, 70, 760, 70,
+        self.network_canvas.create_line(625, 70, 780, 70,
                                         width=self.thickness, fill="black")
         self.network_canvas.create_line(722, 30, 722, 190,
                                         width=self.thickness, fill="black")
