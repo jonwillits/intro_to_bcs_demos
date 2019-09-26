@@ -65,6 +65,7 @@ class Network:
     def sigmoid_prime(z):
         return 1/(1+np.exp(-z)) * (1 - 1/(1+np.exp(-z)))
 
+
 ############################################################################################################
 ############################################################################################################
 class Display:
@@ -116,6 +117,10 @@ class Dataset:
         self.number_index_dict = {}
         self.number_data_dict = {}
         self.read_file()
+        self.x = []
+        self.y = []
+        self.n = 0
+        self.create_items()
 
     def read_file(self):
         f = open(self.file_path)
@@ -127,13 +132,47 @@ class Dataset:
             self.number_data_dict[data[0]] = data[1:]
         f.close()
 
+    def create_items(self):
+        for number in self.number_list:
+            new_y = np.zeros([10], float)
+            new_y[int(number)] = 1
+            self.y.append(new_y)
+            new_x_matrix = np.zeros([5, 5], float)
+            number_data = self.number_data_dict[number]
+            for i in range(len(number_data)):
+                data = number_data[i].strip()
+                x1 = int(data[0])
+                x2 = int(data[1])
+                new_x_matrix[x1, x2] = 1
+            new_x_vector = new_x_matrix.flatten()
+            self.x.append(new_x_vector)
+            self.n += 1
+        print(len(self.x), len(self.y))
+
 
 def main():
     window_size = (800, 600)
-    the_dataset = Dataset('numbers_items.txt')
+    the_dataset = Dataset('digits_items.txt')
 
-    the_network = Network(25, 5, 10)
+    the_network = Network(25, 10, 10)
     np.set_printoptions(suppress=True, precision=3)
+
+    learning_rate = 0.1
+
+    for i in range(1000):
+        epoch_cost_sum = 0
+        for j in range(the_dataset.n):
+            h, o = the_network.feedforward(the_dataset.x[j])
+            o_cost = the_network.calc_cost(the_dataset.y[j], o)
+            the_network.backpropogation(the_dataset.x[j], o, h, o_cost, learning_rate)
+            epoch_cost_sum += (o_cost**2).sum()
+        epoch_cost = epoch_cost_sum / the_dataset.n
+        print("{} {:0.5f}".format(i, epoch_cost))
+
+    for i in range(the_dataset.n):
+        h, o = the_network.feedforward(the_dataset.x[i])
+        print("{}    {}".format(the_dataset.number_list[i], o))
+
     the_display = Display(window_size, the_network, the_dataset)
     the_display.root.mainloop()
 
