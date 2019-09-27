@@ -124,7 +124,7 @@ class Display:
 
         self.button_frame = tk.Frame(self.root, height=30, width=self.width, padx=0, pady=0)
         self.button_frame.pack()
-        ttk.Style().configure("TButton", padding=4, relief="flat", background="red")
+        ttk.Style().configure("TButton", padding=4, relief="flat", background="white")
         ttk.Button(self.button_frame, text="Train 1x", command=self.train1).pack(side=tk.LEFT)
         ttk.Button(self.button_frame, text="Train 10x", command=self.train10).pack(side=tk.LEFT)
         ttk.Button(self.button_frame, text="Train 100x", command=self.train100).pack(side=tk.LEFT)
