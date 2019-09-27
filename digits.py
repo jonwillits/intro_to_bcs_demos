@@ -81,31 +81,39 @@ class Display:
         self.root = tk.Tk()
         self.root.title("Digit Recognition Neural Network")
 
-        self.current_input = self.dataset.x[0]
+        self.selected_unit = "h1"
+        self.current_input = np.copy(self.dataset.x[0])
         self.hidden_size = self.network.hidden_size
         self.num_epochs = 100
         self.learning_rate = 0.10
         self.cost_history = []
 
         self.init_display()
-        self.draw_network()
+        self.update_display()
 
     def init_display(self):
-        self.interface_frame = tk.Frame(self.root, height=110, width=800, padx=0, pady=0, bg='black')
+        self.interface_frame = tk.Frame(self.root, height=35, width=800, padx=0, pady=0, bg='grey')
         self.interface_frame.pack()
-        self.network_frame = tk.Frame(self.root, height=490, width=800, padx=0, pady=0)
+        self.network_frame = tk.Frame(self.root, height=565, width=800, padx=0, pady=0)
         self.network_frame.pack()
-
-        self.unit_info_canvas = tk.Canvas(self.network_frame, height=190, width=800, bg="#222222", bd=0,
-                                        highlightthickness=0, relief='ridge')
-        self.unit_info_canvas.pack()
 
         self.network_canvas = tk.Canvas(self.network_frame, height=300, width=800, bg="#000000", bd=0,
                                         highlightthickness=0, relief='ridge')
         self.network_canvas.pack()
         self.network_canvas.bind("<Button-1>", self.network_click)
+        self.network_canvas.bind("<Double-Button-1>", self.network_doubleclick)
+
+        self.weight_canvas = tk.Canvas(self.network_frame, height=265, width=800, bg="#000000", bd=0,
+                                        highlightthickness=0, relief='ridge')
+        self.weight_canvas.pack()
+
+
 
         self.draw_interface()
+
+    def update_display(self):
+        self.draw_network()
+        self.draw_weights()
 
     def draw_network(self):
         self.network_canvas.delete("all")
@@ -114,6 +122,60 @@ class Display:
         self.draw_hidden_layer()
         self.draw_output_layer()
         self.root.update()
+
+    def draw_weights(self):
+        self.weight_canvas.delete("all")
+        self.weight_canvas.create_line(0, 5, 800, 5, fill='white', width=2)
+        self.weight_canvas.create_text(80, 25, text="Selected Unit: {}".format(self.selected_unit), font="Arial 14 bold", fill='white')
+        if self.selected_unit[0] == 'i':
+            self.weight_canvas.create_text(100, 50, text="Input-->Hidden Weights", font="Arial 11", fill='white')
+            self.draw_hx_weights()
+        elif self.selected_unit[0] == 'h':
+            self.weight_canvas.create_text(100, 50, text="Input-->Hidden Weights", font="Arial 11", fill='white')
+            self.weight_canvas.create_text(350, 50, text="Hidden-->Output Weights", font="Arial 11", fill='white')
+            self.draw_hx_weights()
+            self.draw_yh_weights()
+        elif self.selected_unit[0] == 'o':
+            self.weight_canvas.create_text(350, 50, text="Hidden-->Output Weights", font="Arial 11", fill='white')
+            self.draw_yh_weights()
+        self.root.update()
+
+    def draw_hx_weights(self):
+        startx = 30
+        starty = 70
+        size = 30
+        spacing = 1
+
+        index = int(self.selected_unit[1:])
+
+        if self.selected_unit[0] == 'i':
+            weight_vector = np.copy(self.network.h_x[:, index])
+            x1 = startx
+            for i in range(len(weight_vector)):
+                color = self.get_hex_color(weight_vector[i])
+                y1 = starty + (size + spacing) * i
+                self.network_canvas.create_rectangle(x1, y1, x1 + size, y1 + size, fill=color)
+
+        elif self.selected_unit[0] == 'h':
+            print(self.network.h_x.shape)
+
+            weight_vector = np.copy(self.network.h_x[index, :])
+            weight_matrix = weight_vector.reshape((5, 5))
+            print(weight_matrix.shape)
+            for i in range(weight_matrix.shape[0]):
+                for j in range(weight_matrix.shape[1]):
+                    color = self.get_hex_color(weight_matrix[i, j])
+
+                    x1 = startx + (size + spacing) * i
+                    y1 = starty + (size + spacing) * j
+                    print(x1, y1, x1 + size, y1 + size)
+                    try:
+                        self.weight_canvas.create_rectangle(x1, y1, x1 + size, y1 + size, fill=color)
+                    except:
+                        print(weight_matrix[i, j], color)
+
+    def draw_yh_weights(self):
+        pass
 
     def draw_inputs(self):
         startx = 10
@@ -149,7 +211,8 @@ class Display:
                 y1 = starty + (size + spacing) * j
                 self.network_canvas.create_rectangle(x1, y1, x1 + size, y1 + size,
                                                      fill=color, tags=the_tag)
-        self.network_canvas.create_text(150, 20, text="Input Layer", font="Arial 24 bold", fill='white')
+                unit_counter += 1
+        self.network_canvas.create_text(150, 20, text="Input Layer", font="Arial 20 bold", fill='white')
 
     def draw_hidden_layer(self):
         startx = 350
@@ -158,7 +221,7 @@ class Display:
         spacing = 2
 
         h, o = self.network.feedforward(self.current_input)
-        self.network_canvas.create_text(400, 20, text="Hidden Layer", font="Arial 24 bold", fill='white')
+        self.network_canvas.create_text(400, 20, text="Hidden Layer", font="Arial 20 bold", fill='white')
         for i in range(self.hidden_size):
 
             the_tag = "h" + str(i+1)
@@ -172,7 +235,7 @@ class Display:
 
     def draw_output_layer(self):
         h, o = self.network.feedforward(self.current_input)
-        self.network_canvas.create_text(600, 20, text="Output Layer", font="Arial 24 bold", fill='white')
+        self.network_canvas.create_text(620, 20, text="Output Layer", font="Arial 20 bold", fill='white')
         startx = 540
         starty = 40
         size = 22
@@ -192,37 +255,51 @@ class Display:
             self.network_canvas.create_text(startx + 200, y1 + 10 + 2, text=value, font="Arial 12 bold", fill='white')
 
     def draw_interface(self):
-        tk.Label(self.interface_frame, text="Training Epochs", bg='black', fg='white').place(x=20, y=5)
+        tk.Label(self.interface_frame, text="Training Epochs", bg='grey', fg='black').place(x=20, y=5)
         v = tk.StringVar(self.root, value=self.num_epochs)
         self.epochs_entry = tk.Entry(self.interface_frame, width=6, textvariable=v, relief='flat', borderwidth=0)
-        self.epochs_entry.place(x=150, y=5)
+        self.epochs_entry.place(x=130, y=5)
 
-        tk.Label(self.interface_frame, text="Learning Rate", bg='black', fg='white').place(x=20, y=40)
+        tk.Label(self.interface_frame, text="Learning Rate", bg='grey', fg='black').place(x=210, y=5)
         v = tk.StringVar(self.root, value=self.learning_rate)
         self.learning_rate_entry = tk.Entry(self.interface_frame, width=6, textvariable=v, relief='flat', borderwidth=0)
-        self.learning_rate_entry.place(x=150, y=40)
+        self.learning_rate_entry.place(x=310, y=5)
 
-        tk.Label(self.interface_frame, text="Hidden Size", bg='black', fg='white').place(x=20, y=75)
+        tk.Label(self.interface_frame, text="Hidden Size", bg='grey', fg='black').place(x=390, y=5)
         v = tk.StringVar(self.root, value=self.hidden_size, )
         self.hidden_size_entry = tk.Entry(self.interface_frame, width=6, textvariable=v, relief='flat', borderwidth=0)
-        self.hidden_size_entry.place(x=150, y=75)
+        self.hidden_size_entry.place(x=480, y=5)
 
-        ttk.Style().configure("TButton", padding=0, relief="flat", background="white")
-        self.train_button = ttk.Button(self.interface_frame, text="Train", width=4, command=self.train)
-        self.train_button.place(x=250, y=25)
-        self.reset_button = ttk.Button(self.interface_frame, text="Reset", width=4, command=self.reset)
-        self.reset_button.place(x=250, y=60)
+        ttk.Style().configure("TButton", padding=0, relief="flat", background="#111111", foreground='white')
+        self.train_button = ttk.Button(self.interface_frame, text="Train", width=5, command=self.train)
+        self.train_button.place(x=600, y=5)
+        self.reset_button = ttk.Button(self.interface_frame, text="Reset", width=5, command=self.reset)
+        self.reset_button.place(x=675, y=5)
 
     def train(self):
         epoch_entry = self.epochs_entry.get()
-        if isinstance(epoch_entry, int):
-            if epoch_entry > 0:
-                self.num_epochs = epoch_entry
+        try:
+            new_epochs = int(epoch_entry)
+            if new_epochs > 0:
+                self.num_epochs = new_epochs
+            else:
+                self.epochs_entry.delete(0, tk.END)  # deletes the current value
+                self.epochs_entry.insert(0, self.num_epochs)  # inserts new value assigned by 2nd parameter
+        except:
+            self.epochs_entry.delete(0, tk.END)  # deletes the current value
+            self.epochs_entry.insert(0, self.num_epochs)  # inserts new value assigned by 2nd parameter
 
         learning_rate_entry = self.learning_rate_entry.get()
-        if isinstance(learning_rate_entry, float):
-            if 0 < learning_rate_entry < 1:
-                self.learning_rate = learning_rate_entry
+        try:
+            new_lr = float(learning_rate_entry)
+            if 0 <= new_lr <= 1:
+                self.learning_rate = new_lr
+            else:
+                self.learning_rate_entry.delete(0, tk.END)
+                self.learning_rate_entry.insert(0, self.learning_rate)
+        except:
+            self.learning_rate_entry.delete(0, tk.END)
+            self.learning_rate_entry.insert(0, self.learning_rate)
 
         for i in range(self.num_epochs):
             epoch_cost_sum = 0
@@ -234,28 +311,60 @@ class Display:
             epoch_cost = epoch_cost_sum / self.dataset.n
             self.cost_history.append(epoch_cost)
             if i % 10 == 0:
-                self.draw_network()
-        self.draw_network()
+                self.update_display()
+        self.update_display()
 
     def network_click(self, event):
+        the_tag = self.get_tags(event)
+        if the_tag is not None:
+            if the_tag[0] == 'n':
+                self.current_input = np.copy(self.dataset.x[int(the_tag[1])])
+                self.update_display()
+            if the_tag[0] == 'i':
+                self.selected_unit = the_tag
+                self.update_display()
+            if the_tag[0] == 'h':
+                self.selected_unit = the_tag
+                self.update_display()
+
+    def network_doubleclick(self, event):
+        the_tag = self.get_tags(event)
+        if the_tag is not None:
+            if the_tag[0] == 'i':
+                index = int(the_tag[1:])
+
+                if self.current_input[index] == 1:
+                    self.current_input[index] = 0
+                else:
+                    self.current_input[index] = 1
+                self.update_display()
+
+    def reset(self):
+        hidden_size_entry = self.hidden_size_entry.get()
+        try:
+            new_hidden_size = int(hidden_size_entry)
+            if 0 < new_hidden_size <= 20:
+                self.hidden_size = new_hidden_size
+            else:
+                self.hidden_size_entry.delete(0, tk.END)  # deletes the current value
+                self.hidden_size_entry.insert(0, self.hidden_size)  # inserts new value assigned by 2nd parameter
+        except:
+            self.hidden_size_entry.delete(0, tk.END)  # deletes the current value
+            self.hidden_size_entry.insert(0, self.hidden_size)  # inserts new value assigned by 2nd parameter
+
+        self.current_input = np.copy(self.dataset.x[0])
+        self.cost_history = []
+        self.network.init_network(self.hidden_size)
+        self.update_display()
+
+    def get_tags(self, event):
         x, y = event.x, event.y
         ids = self.network_canvas.find_overlapping(x - 5, y - 5, x + 5, y + 5)
         if len(ids) > 0:
             the_tag = self.network_canvas.itemcget(ids[0], "tags").split()[0]
-            print(the_tag)
-            if the_tag[0] == 'n':
-                self.current_input = self.dataset.x[int(the_tag[1])]
-                self.draw_network()
-
-    def reset(self):
-        hidden_size_entry = self.hidden_size_entry.get()
-        if isinstance(hidden_size_entry, int):
-            if 0 < hidden_size_entry > 21:
-                self.hidden_size = hidden_size_entry
-        self.current_input = self.dataset.x[0]
-        self.cost_history = []
-        self.network.init_network(self.hidden_size)
-        self.draw_network()
+        else:
+            the_tag = None
+        return the_tag
 
     @staticmethod
     def quit_simulation():
@@ -265,6 +374,11 @@ class Display:
     def get_hex_color(value):
         abs_value = 1 - abs(value)
         scaled_value = int(round(255 * abs_value, 0))
+        print(scaled_value)
+        if scaled_value < 0:
+            scaled_value = 0
+        if scaled_value > 255:
+            scaled_value = 255
         hex_value = hex(scaled_value)[2:]
 
         if len(hex_value) == 1:
