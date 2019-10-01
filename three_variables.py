@@ -67,7 +67,10 @@ class Display:
             self.single_variable_canvas_list.append(new_canvas)
             new_canvas.create_line(20, 210, 340, 210, fill='black', width=2)
             new_canvas.create_line(20, 210, 20, 20, fill='black', width=2)
-            new_canvas.create_text(5, 150, anchor="nw", angle=90, text=self.agent.variable_label_list[i])
+            try:
+                new_canvas.create_text(5, 150, anchor="nw", angle=90, text=self.agent.variable_label_list[i])
+            except:
+                new_canvas.create_text(5, 150, text=self.agent.variable_label_list[i])
             new_canvas.create_text(175, 220, text="Day")
 
     def create_all_var_window(self):
