@@ -1,5 +1,6 @@
 import tkinter as tk
 import sys
+import random
 import numpy as np
 from tkinter import ttk
 
@@ -43,7 +44,6 @@ class Network:
         h_cost = np.dot(o_delta, self.o_h)
         h_delta = h_cost * self.tanh_prime(h)
 
-        # change all these to -=
         self.o_bias += o_delta * learning_rate
         self.o_h += (np.dot(o_delta.reshape(len(o_delta), 1), h.reshape(1, len(h))) * learning_rate)
 
@@ -144,7 +144,7 @@ class Display:
         self.error_canvas.create_text(x_is_0-20, y_is_0-(0.5*y_scale), fill='white', text='Error')
         self.error_canvas.create_text(180, 20, fill='white', text='Error History', font="Arial 20 bold")
 
-        if len(self.error_history) > 1:
+        if 1 < len(self.error_history) < 300:
             for i in range(len(self.error_history)-1):
                 x1 = x_is_0 + (x_scale * (i / 300))
                 y1 = y_is_0 - (y_scale * (self.error_history[i]/2.5))
@@ -381,10 +381,14 @@ class Display:
 
         for i in range(self.num_epochs):
             epoch_cost_sum = 0
+            indexes = list(range(10))
+            random.shuffle(indexes)
+
             for j in range(self.dataset.n):
-                h, o = self.network.feedforward(self.dataset.x[j])
-                o_cost = self.network.calc_cost(self.dataset.y[j], o)
-                self.network.backpropogation(self.dataset.x[j], o, h, o_cost, self.learning_rate)
+                index = indexes[j]
+                h, o = self.network.feedforward(self.dataset.x[index])
+                o_cost = self.network.calc_cost(self.dataset.y[index], o)
+                self.network.backpropogation(self.dataset.x[index], o, h, o_cost, self.learning_rate)
                 epoch_cost_sum += (o_cost**2).sum()
 
             epoch_error = epoch_cost_sum / self.dataset.n
@@ -522,9 +526,11 @@ class Dataset:
 
 
 def main():
+    hidden_size = 8
+
     the_dataset = Dataset('digits_items.txt')
 
-    the_network = Network(25, 12, 10)
+    the_network = Network(25, hidden_size, 10)
     np.set_printoptions(suppress=True, precision=3)
 
     the_display = Display(the_network, the_dataset)
