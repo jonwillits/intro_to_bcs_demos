@@ -1,18 +1,7 @@
 from ..entities import entities
-from ..bodies import body_components
+from ..bodies import sensors, actuators
+from ..nervous_systems import nervous_system
 import numpy as np
-
-
-# class HeatSource(Entity):
-#
-#     def __init__(self, main_window, index):
-#         """
-#         Initializes a HeatSource object, representing a heat source on the turtle screen.
-#         """
-#         super().__init__(main_window, index, entity_type="HeatSource")
-#         self.intensity = 1
-#
-
 
 class Agent(entities.Entity):
 
@@ -25,10 +14,6 @@ class Agent(entities.Entity):
             main_window (TurtleWindow): A reference to the TurtleWindow instance managing the simulation.
 
         """
-        if 'Agent' in main_window.param_dict:
-            params = main_window.param_dict['Agent']
-        else:
-            params = None
 
         super().__init__(main_window, index, entity_type="Agent")
 
@@ -44,12 +29,13 @@ class Agent(entities.Entity):
         self.init_nervous_system()
         self.init_actuators()
 
-    def init_sensors(self):
-        self.sensor_list = [body_components.HeatSensor(self, anchor_position="ne"),
-                            body_components.HeatSensor(self, anchor_position="nw")]
-
     def init_body(self):
-        pass
+
+
+    def init_sensors(self):
+        self.sensor_list = [sensors.HeatSensor(self, anchor_position="n")]
+
+
 
     def init_nervous_system(self):
         pass

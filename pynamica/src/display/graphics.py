@@ -2,6 +2,55 @@ import os
 import shutil
 from PIL import Image, ImageDraw
 
+import math
+
+def get_point_on_shape(shape, width, height, xy_position, rotation, direction):
+    x, y = xy_position
+    rotation_radians = math.radians(rotation)
+
+    # Define direction vectors (normalized)
+    direction_vectors = {
+        'n': (0, 1),
+        's': (0, -1),
+        'e': (1, 0),
+        'w': (-1, 0),
+        'ne': (math.sqrt(2)/2, math.sqrt(2)/2),
+        'nw': (-math.sqrt(2)/2, math.sqrt(2)/2),
+        'se': (math.sqrt(2)/2, -math.sqrt(2)/2),
+        'sw': (-math.sqrt(2)/2, -math.sqrt(2)/2),
+    }
+
+    dx, dy = direction_vectors[direction]
+
+    if shape == 'rectangle':
+        half_width = width / 2
+        half_height = height / 2
+
+        # Rotate the direction vector
+        rotated_dx = dx * math.cos(rotation_radians) - dy * math.sin(rotation_radians)
+        rotated_dy = dx * math.sin(rotation_radians) + dy * math.cos(rotation_radians)
+
+        # Scale the vector by the rectangle's half-dimensions
+        point_x = x + rotated_dx * half_width
+        point_y = y + rotated_dy * half_height
+
+    elif shape == 'ellipse':
+        # Ellipse requires parametric equations and consideration of rotation
+        # Calculate the angle for the direction
+        direction_angle = math.atan2(dy, dx)
+
+        # Adjust the direction angle by the rotation of the ellipse
+        total_angle = direction_angle + rotation_radians
+
+        # Use the parametric equations for an ellipse
+        point_x = x + (width / 2) * math.cos(total_angle)
+        point_y = y + (height / 2) * math.sin(total_angle)
+    else:
+        raise ValueError("Shape must be 'rectangle' or 'ellipse'.")
+
+    return point_x, point_y
+
+
 def create_rotated_shape_images(path, width=50, height=50, shape="ellipse", color=(128, 128, 128), angles=24):
     print(width, height, shape, color, path, angles)
 

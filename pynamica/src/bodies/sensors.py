@@ -1,7 +1,7 @@
 import math
 from . import body_components
 
-class HeatSensor(body_components.BodyComponent):
+class Sensor(body_components.BodyComponent):
 
     def __init__(self, parent_object, anchor_position, sensitivity=1):
 

@@ -1,45 +1,59 @@
 
 class Display:
+    category = "display"
     width = 1920
     height = 1080
 
-class Entity:
-    count = 0
-    shape = "ellipse"
-    height = 50
-    width = 50
-    color = (128, 128, 128)
-    starting_orientation = 0
-
 class HeatSource:
+    category = "entity"
     count = 1
-    mass = 10
+    mass = 1
     intensity = 1
     shape = "ellipse"
     height = 50
     width = 50
     color = (255, 155, 0)
-    starting_orientation = 0
+
+class Torso:
+    category = "body_component"
+    mass = 1
+    shape = "rectangle"
+    height = 80
+    width = 20
+
+class HeatSensor:
+    category = "sensor"
+    mass = 1
+    shape = "rectangle"
+    sensor_type = "HeatSource"
+    height = 10
+    width = 10
+    color = (0, 0, 0)
+
+class Wheel:
+    category = "actuator"
+    mass = 1
+    shape = "rectangle"
+    height = 20
+    width = 5
+    color = (0, 0, 0)
+
+class GreenVehicle:
+    category = "entity"
+    count = 1
 
 class RedVehicle:
+    category = "entity"
     count = 1
-    mass = 10
-    max_speed = 10
-    shape = "rectangle"
-    height = 20
-    width = 5
-    color = (255, 0, 0)
-    starting_orientation = 0
 
 class BlueVehicle:
+    category = "entity"
     count = 1
-    mass = 10
-    max_speed = 10
-    shape = "rectangle"
-    height = 20
-    width = 5
-    color = (0, 0, 255)
-    starting_orientation = 0
+
+
+
+
+
 
 def get_param_dict():
     param_dict = {}
